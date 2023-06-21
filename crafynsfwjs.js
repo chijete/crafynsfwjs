@@ -97,7 +97,7 @@ class CrafyNSFWjs {
       try {
         var fileUrlParts = fileUrl.split("/");
         var fileName = fileUrlParts[fileUrlParts.length-1];
-        var blobFile = await downloadFile(fileUrl);
+        var blobFile = await this.downloadFile(fileUrl);
         downloadedFiles[fileName] = blobFile;
       } catch (error) {
         console.error('[CrafyNSFWjs] donwloadModel: Downloading file error:', error);
