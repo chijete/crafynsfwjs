@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrafyNSFWjs</title>
+
+  <!-- Load resources -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest" type="text/javascript"></script>
+  <script src="rec/gifuct-js/gifuct-js.min.js" type="text/javascript"></script>
+  <script src="rec/nsfw-js/nsfwjs.min.js" type="text/javascript"></script>
+  <script src="crafynsfwjs.js" type="text/javascript"></script>
+
+  <style>
+    #imagePreview {
+      display: block;
+      max-width: 100%;
+      max-height: 400px;
+      margin: 10px auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CrafyNSFWjs</h1>
+
+  <p>NSFW detection in multimedia</p>
+
+  <input type="file" id="imageInput">
+  <p id="results"></p>
+  <img src="" id="imagePreview">
+
+  <br>
+  <p>Used libraries:</p>
+  <ul>
+    <li><a href="https://github.com/infinitered/nsfwjs">NSFW.js</a></li>
+    <li><a href="https://github.com/matt-way/gifuct-js">gifuct.js</a></li>
+    <li><a href="https://www.tensorflow.org/js">Tensorflow JS</a></li>
+  </ul>
+  <p>Made with ♥ by <a href="https://github.com/chijete/">Crafy Holding</a></p>
+
+  <script>
+    var urlToModelFiles = window.location.href+'rec/nsfw-js/model/';
+    var nsfwjsclass = new CrafyNSFWjs(urlToModelFiles);
+    var imageInput = document.getElementById('imageInput');
+    var imagePreview = document.getElementById('imagePreview');
+    var results = document.getElementById('results');
+
+    imageInput.setAttribute('accept', nsfwjsclass.getAllAcceptedFiletypes().join(", "));
+
+    function makeThePrediction(domElement) {
+      console.log('makeThePrediction called');
+      nsfwjsclass.makeMagicPrediction(domElement).then(function(result) {
+        console.log('result', result);
+        if (result !== false) {
+          imagePreview.src = result['imageElement'].src;
+          results.innerHTML = `
+            Este `+result['inputType']+` es `+result['predictionResult']['prediction'][0]['className']+` con un `+result['predictionResult']['prediction'][0]['probability']*100+`% de seguridad.
+          `;
+        } else {
+          results.innerHTML = 'Error en el análisis. Puede que el archivo no sea compatible.';
+        }
+      }).catch(function(error) {
+        console.log('ERROR', error);
+      });
+    }
+
+    imageInput.addEventListener('change', function(event) {
+      
+      results.innerHTML = 'Cargando...';
+
+      const file = event.target.files[0];
+      var domElement;
+      if (file.type.includes('video')) {
+        domElement = document.createElement('video');
+      } else if (file.type.includes('image')) {
+        domElement = document.createElement('img');
+      }
+      domElement.src = URL.createObjectURL(file);
+
+      domElement.onload = function() {
+        makeThePrediction(domElement);
+      };
+
+      domElement.onloadeddata = function() {
+        makeThePrediction(domElement);
+      };
+
+    });
+
+  </script>
+  
+</body>
+</html>
