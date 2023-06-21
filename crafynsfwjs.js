@@ -384,6 +384,8 @@ class CrafyNSFWjs {
         'analicedImageBlob': imageBlob
       };
 
+    } else {
+      console.error('[CrafyNSFWjs] Error loading the model.');
     }
     return false;
   }
