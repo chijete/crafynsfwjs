@@ -149,7 +149,7 @@ class CrafyNSFWjs {
   // Carga el modelo NSFWjs en this.nsfwjsModel
   async loadModel() {
     var isModelLoaded = await this.isModelLoadedInIndexeddb();
-    if (isModelLoaded != 0) {
+    if (isModelLoaded !== 0) {
       if (!isModelLoaded) {
         await this.donwloadModel();
       }
@@ -159,6 +159,8 @@ class CrafyNSFWjs {
       } catch (error) {
         console.error('[CrafyNSFWjs] loadModel: Loading model error:', error);
       }
+    } else {
+      console.error('[CrafyNSFWjs] isModelLoadedInIndexeddb returned 0');
     }
     return false;
   }
