@@ -6,7 +6,7 @@
   <title>CrafyNSFWjs</title>
 
   <!-- Load resources -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest" type="text/javascript"></script>
+  <script src="rec/tensorflow-js/tf.js" type="text/javascript"></script>
   <script src="rec/gifuct-js/gifuct-js.min.js" type="text/javascript"></script>
   <script src="rec/nsfw-js/nsfwjs.min.js" type="text/javascript"></script>
   <script src="crafynsfwjs.js" type="text/javascript"></script>
@@ -30,6 +30,9 @@
   <p id="results"></p>
   <img src="" id="imagePreview">
 
+  <p>Load model time: <span id="loadModelTime"></span> ms</p>
+  <p>Download model time: <span id="downloadModelTime"></span> ms</p>
+
   <br>
   <p>Used libraries:</p>
   <ul>
@@ -40,11 +43,24 @@
   <p>Made with ♥ by <a href="https://github.com/chijete/">Crafy Holding</a></p>
 
   <script>
-    var urlToModelFiles = window.location.href+'rec/nsfw-js/model/';
+
+    // var urlToModelFiles = window.location.href+'rec/nsfw-js/model/';
+    // var nsfwjsclass = new CrafyNSFWjs(urlToModelFiles);
+
+    // ⚠️ 'model_tiny' doesn't works!
+    // var urlToModelFiles = window.location.href + 'rec/nsfw-js/model_tiny/';
+    // var nsfwjsclass = new CrafyNSFWjs(urlToModelFiles);
+    // nsfwjsclass.setModelType('model_tiny');
+
+    var urlToModelFiles = window.location.href + 'rec/nsfw-js/model_graph/';
     var nsfwjsclass = new CrafyNSFWjs(urlToModelFiles);
+    nsfwjsclass.setModelType('model_graph');
+
     var imageInput = document.getElementById('imageInput');
     var imagePreview = document.getElementById('imagePreview');
     var results = document.getElementById('results');
+    var loadModelTime = document.getElementById('loadModelTime');
+    var downloadModelTime = document.getElementById('downloadModelTime');
 
     imageInput.setAttribute('accept', nsfwjsclass.getAllAcceptedFiletypes().join(", "));
 
@@ -57,6 +73,8 @@
           results.innerHTML = `
             Este `+result['inputType']+` es `+result['predictionResult']['prediction'][0]['className']+` con un `+result['predictionResult']['prediction'][0]['probability']*100+`% de seguridad.
           `;
+          loadModelTime.innerText = nsfwjsclass.loadModelTime;
+          downloadModelTime.innerText = nsfwjsclass.downloadModelTime;
         } else {
           results.innerHTML = 'Error en el análisis. Puede que el archivo no sea compatible.';
         }

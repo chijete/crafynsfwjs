@@ -22,7 +22,41 @@ class CrafyNSFWjs {
     indexeddbModelPathName='nsfwjs-model3',
     customPredictionConfig=false
   ) {
-    this.indexeddbModelPath = 'indexeddb://'+indexeddbModelPathName;
+    this.model_type = 'model';
+    this.allModelTypes = {
+      'model': {
+        'filenames': [
+          'model.json',
+          'group1-shard1of6',
+          'group1-shard2of6',
+          'group1-shard3of6',
+          'group1-shard4of6',
+          'group1-shard5of6',
+          'group1-shard6of6',
+        ],
+        'size': 299,
+        'is_graph': false
+      },
+      'model_tiny': {
+        'filenames': [
+          'model.json',
+          'group1-shard1of1',
+        ],
+        'size': 224,
+        'is_graph': false
+      },
+      'model_graph': {
+        'filenames': [
+          'model.json',
+          'group1-shard1of2.bin',
+          'group1-shard2of2.bin',
+        ],
+        'size': 224,
+        'is_graph': true
+      }
+    };
+    this.indexeddbModelPathName = indexeddbModelPathName;
+    this.indexeddbModelPath = 'indexeddb://' + this.indexeddbModelPathName + this.model_type;
     this.urlToModelFiles = urlToModelFiles;
     this.nsfwjsModel = false;
     this.predictionLocalConfig = {
@@ -55,7 +89,16 @@ class CrafyNSFWjs {
         this.predictionLocalConfig[key] = value;
       }
     }
+    this.loadModelTime = false;
+    this.downloadModelTime = false;
     return true;
+  }
+
+  setModelType(modelType) {
+    if (this.allModelTypes[modelType] !== undefined) {
+      this.model_type = modelType;
+      this.indexeddbModelPath = 'indexeddb://' + this.indexeddbModelPathName + this.model_type;
+    }
   }
 
   // Descarga un archivo en formato BLOB usando fetch()
@@ -79,15 +122,8 @@ class CrafyNSFWjs {
 
   // Descarga el modelo del servidor y lo guarda en IndexedDB
   async donwloadModel() {
-    var filenamesToDownload = [
-      'group1-shard1of6',
-      'group1-shard2of6',
-      'group1-shard3of6',
-      'group1-shard4of6',
-      'group1-shard5of6',
-      'group1-shard6of6',
-      'model.json',
-    ];
+    var downloadModelInitTime = Date.now();
+    var filenamesToDownload = this.allModelTypes[this.model_type]['filenames'];
     var filesToDownload = [];
     for (const filename of filenamesToDownload) {
       filesToDownload.push(this.urlToModelFiles + filename);
@@ -104,17 +140,19 @@ class CrafyNSFWjs {
         return false;
       }
     }
-    var browserFilesInstance = tf.io.browserFiles([
-      downloadedFiles['model.json'],
-      downloadedFiles['group1-shard1of6'],
-      downloadedFiles['group1-shard2of6'],
-      downloadedFiles['group1-shard3of6'],
-      downloadedFiles['group1-shard4of6'],
-      downloadedFiles['group1-shard5of6'],
-      downloadedFiles['group1-shard6of6'],
-    ]);
+    var downloadedFiles_for_browserFiles = [];
+    for (const fileNameItem of this.allModelTypes[this.model_type]['filenames']) {
+      downloadedFiles_for_browserFiles.push(downloadedFiles[fileNameItem]);
+    }
+    var browserFilesInstance = tf.io.browserFiles(downloadedFiles_for_browserFiles);
+    console.log('browserFilesInstance', browserFilesInstance);
     try {
-      const model = await tf.loadLayersModel(browserFilesInstance);
+      var model;
+      if (this.allModelTypes[this.model_type]['is_graph']) {
+        model = await tf.loadGraphModel(browserFilesInstance);
+      } else {
+        model = await tf.loadLayersModel(browserFilesInstance);
+      }
       await model.save(this.indexeddbModelPath);
       model.dispose();
     } catch (error) {
@@ -125,6 +163,8 @@ class CrafyNSFWjs {
     // Liberar memoria
     downloadedFiles = null;
     browserFilesInstance = null;
+
+    this.downloadModelTime = Date.now() - downloadModelInitTime;
 
     return true;
   }
@@ -148,13 +188,22 @@ class CrafyNSFWjs {
 
   // Carga el modelo NSFWjs en this.nsfwjsModel
   async loadModel() {
+    var loadModelInitTime = Date.now();
     var isModelLoaded = await this.isModelLoadedInIndexeddb();
     if (isModelLoaded !== 0) {
       if (!isModelLoaded) {
         await this.donwloadModel();
       }
       try {
-        this.nsfwjsModel = await nsfwjs.load(this.indexeddbModelPath, {size: 299});
+        var loadModelConfig = {
+          'size': this.allModelTypes[this.model_type]['size']
+        };
+        if (this.allModelTypes[this.model_type]['is_graph']) {
+          loadModelConfig['type'] = 'graph';
+        }
+        var loadModelPath = this.indexeddbModelPath;
+        this.nsfwjsModel = await nsfwjs.load(loadModelPath, loadModelConfig);
+        this.loadModelTime = Date.now() - loadModelInitTime;
         return true;
       } catch (error) {
         console.error('[CrafyNSFWjs] loadModel: Loading model error:', error);
